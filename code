@@ -1,0 +1,189 @@
+#region VEXcode Generated Robot Configuration
+from vex import *
+import urandom
+import math
+
+# Brain should be defined by default
+brain=Brain()
+
+# Robot configuration code
+brain_inertial = Inertial()
+rightmotor = Motor(Ports.PORT12, False)
+leftmotor = Motor(Ports.PORT6, True)
+BeamLift_motor_a = Motor(Ports.PORT10, True)
+BeamLift_motor_b = Motor(Ports.PORT4, False)
+BeamLift = MotorGroup(BeamLift_motor_a, BeamLift_motor_b)
+PinLift_motor_a = Motor(Ports.PORT5, True)
+PinLift_motor_b = Motor(Ports.PORT11, False)
+PinLift = MotorGroup(PinLift_motor_a, PinLift_motor_b)
+controller = Controller()
+pneumatic_9 = Pneumatic(Ports.PORT9)
+touchled_8 = Touchled(Ports.PORT8)
+pneumatic_3 = Pneumatic(Ports.PORT3)
+optical_2 = Optical(Ports.PORT2)
+distance_7 = Distance(Ports.PORT7)
+distance_1 = Distance(Ports.PORT1)
+
+
+
+# generating and setting random seed
+def initializeRandomSeed():
+    wait(100, MSEC)
+    xaxis = brain_inertial.acceleration(XAXIS) * 1000
+    yaxis = brain_inertial.acceleration(YAXIS) * 1000
+    zaxis = brain_inertial.acceleration(ZAXIS) * 1000
+    systemTime = brain.timer.system() * 100
+    urandom.seed(int(xaxis + yaxis + zaxis + systemTime)) 
+    
+# Initialize random seed 
+initializeRandomSeed()
+
+
+# Color to String Helper
+def convert_color_to_string(col):
+    if col == Color.RED:
+        return "red"
+    if col == Color.GREEN:
+        return "green"
+    if col == Color.BLUE:
+        return "blue"
+    if col == Color.WHITE:
+        return "white"
+    if col == Color.YELLOW:
+        return "yellow"
+    if col == Color.ORANGE:
+        return "orange"
+    if col == Color.PURPLE:
+        return "purple"
+    if col == Color.CYAN:
+        return "cyan"
+    if col == Color.RED_VIOLET:
+        return "red_violet"
+    if col == Color.VIOLET:
+        return "violet"
+    if col == Color.BLUE_VIOLET:
+        return "blue_violet"
+    if col == Color.BLUE_GREEN:
+        return "blue_green"
+    if col == Color.YELLOW_GREEN:
+        return "yellow_green"
+    if col == Color.YELLOW_ORANGE:
+        return "yellow_orange"
+    if col == Color.RED_ORANGE:
+        return "red_orange"
+    if col == Color.BLACK:
+        return "black"
+    if col == Color.TRANSPARENT:
+        return "transparent"
+    return ""
+
+#endregion VEXcode Generated Robot Configuration
+
+current_time = 0
+leftSpeed = 0
+rightSpeed = 0
+gyro = 0
+
+def initial():
+
+def turn_distance(power):
+    global leftSpeed, rightSpeed, gyro
+    leftSpeed = power * 3
+    rightSpeed = power * -3
+    leftmotor.spin_for(FORWARD, leftSpeed, DEGREES, wait = False)
+    rightmotor.spin_for(FORWARD, rightSpeed, DEGREES, wait = True)
+
+def GyroTurn(target, kp, second):
+    global leftSpeed, rightSpeed, gyro
+    if kp == 'angle':
+        target = brain_inertial.rotation(DEGREES) + target
+        kp = 1.2
+    leftmotor.spin(FORWARD)
+    rightmotor.spin(FORWARD)
+    final_time = brain.timer.time(SECONDS) + second
+    while not (brain.timer.time(SECONDS) > final_time):
+        print(brain.timer.time(SECONDS))
+        gyro = brain_inertial.rotation(DEGREES)
+        rightSpeed = (gyro- target) * kp 
+        leftSpeed = (gyro - target) * kp * -1
+        rightmotor.set_velocity(((gyro- target) * kp ), PERCENT)
+        leftmotor.set_velocity(((gyro - target) * kp * -1), PERCENT)
+        wait(20, MSEC)
+    leftmotor.stop()
+    rightmotor.stop()
+    leftSpeed = 0
+    rightSpeed = 0
+    wait(0.3, SECONDS)
+
+def gyro_forward_distance(power, target, distances, breakk, kp):
+    global leftSpeed, rightSpeed, gyro
+    if target == 'same':
+        target = brain_inertial.rotation(DEGREES)
+    leftmotor.set_position(0, DEGREES)
+    rightmotor.set_position(0, DEGREES)
+    leftmotor.spin(FORWARD)
+    rightmotor.spin(FORWARD)
+    while math.fabs(rightmotor.position(DEGREES) + leftmotor.position(DEGREES)) < distances:
+        gyro = brain_inertial.rotation(DEGREES)
+        rightSpeed = (power + ((gyro - target) * kp))
+        leftSpeed = (power - ((gyro - target) * kp))
+        leftmotor.set_velocity(leftSpeed,PERCENT)
+        rightmotor.set_velocity(rightSpeed,PERCENT)
+    if breakk:
+        leftmotor.stop()
+        rightmotor.stop()
+        leftSpeed = 0
+        rightSpeed = 0
+        wait(0.3, SECONDS)
+
+def gyro_forward_second(power, target, Second, Break, kp):
+    global leftSpeed, rightSpeed, time_now, gyro
+    rightmotor.spin(FORWARD)
+    leftmotor.spin(FORWARD)
+    if target == 'same':
+        target = brain_inertial.rotation(DEGREES)
+    final_time = brain.timer.time(SECONDS) + Second
+    while not brain.timer.time(SECONDS) > final_time:
+        gyro = brain_inertial.rotation(DEGREES)
+        # print('gyro:', gyro)
+        rightSpeed = (power + ((gyro - target) * kp))
+        leftSpeed = (power - ((gyro - target) * kp))
+        leftmotor.set_velocity(leftSpeed, PERCENT)
+        rightmotor.set_velocity(rightSpeed, PERCENT)
+    if Break:
+        rightmotor.stop()
+        leftmotor.stop()
+        leftSpeed = 0
+        rightSpeed = 0
+        wait(0.3, SECONDS)
+
+def timer_count():
+    global leftSpeed, rightSpeed, gyro, current_time, end_time
+    wait(1.5,SECONDS)
+    gyro = brain_inertial.rotation(DEGREES)
+    adjest_angle = brain_inertial.rotation(DEGREES)
+    current_time = brain.timer.time(SECONDS)
+    wait(0.5,SECONDS)
+    adjest_time = current_time + 0.5
+    adjest_angle = brain_inertial.rotation(DEGREES) - adjest_angle
+    while True:
+        current_time = brain.timer.time(SECONDS)
+        if current_time > adjest_time:
+            brain_inertial.set_rotation(brain_inertial.rotation(DEGREES) - adjest_angle, DEGREES)
+            adjest_time = current_time + 0.5
+        gyro = brain_inertial.rotation(DEGREES)
+        wait(0.02,SECONDS)
+        optical = optical_2.brightness()
+        dis_7 = distance_7.object_distance(MM)
+        print('time', current_time, 'L_S:', leftSpeed, 'R_s:', rightSpeed, 'gyro', gyro, 'optical',optical, 'distance', dis_7)
+
+def start():
+    startTime = brain.timer.time(SECONDS)
+    touchled_8.set_color(Color.RED)
+    brain_inertial.set_heading(0, DEGREES)
+    brain_inertial.set_rotation(0, DEGREES)
+
+initial()
+wait(1, SECONDS)
+touchled_8.pressed(start)
+
