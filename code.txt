@@ -86,12 +86,12 @@ gyro = 0
 
 def initial():
 
-def turn_distance(power):
+def turn_distance(distances):
     global leftSpeed, rightSpeed, gyro
-    leftSpeed = power * 3
-    rightSpeed = power * -3
-    leftmotor.spin_for(FORWARD, leftSpeed, DEGREES, wait = False)
-    rightmotor.spin_for(FORWARD, rightSpeed, DEGREES, wait = True)
+    leftDistances = distances * 3
+    rightDistances = distances * -3
+    leftmotor.spin_for(FORWARD, leftDistances, DEGREES, wait = False)
+    rightmotor.spin_for(FORWARD, rightDistances, DEGREES, wait = True)
 
 def GyroTurn(target, kp, second):
     global leftSpeed, rightSpeed, gyro
